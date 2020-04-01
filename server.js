@@ -12,6 +12,12 @@ const courses = require("./routes/courses");
 const auth = require("./routes/auth");
 const users = require("./routes/users");
 const reviews = require("./routes/reviews");
+const mongoSanitize = require("express-mongo-sanitize");
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
+const hpp = require("hpp");
+const cors = require("cors");
 
 //Load env variables
 dotenv.config({ path: "./config/config.env" });
@@ -27,6 +33,9 @@ app.use(express.json());
 // Cookie parser
 app.use(cookieParser());
 
+// To remove data, use:
+app.use(mongoSanitize());
+
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
@@ -34,6 +43,24 @@ if (process.env.NODE_ENV === "development") {
 
 // File uploading
 app.use(fileupload());
+
+// run helmet
+app.use(helmet());
+
+// Prevent XSS attacks
+app.use(xss());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minute
+  max: 100
+});
+app.use(limiter);
+
+// Prevent httop param pollution
+app.use(hpp());
+
+app.use(cors());
 
 // Set static folder
 app.use(express.static(path.join(__dirname, "public")));
